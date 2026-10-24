@@ -1,0 +1,512 @@
+<title>Furnace Coking Hybrid</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Ethane cracking furnace coking: physics vs ML vs hybrid run-length prediction on sparse synthetic data with a hidden truth, and what it is worth in euros.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Oswald:wght@500;700&family=Playfair+Display:wght@400;600;700&display=swap">
+<style>
+/* Layout: brand-book spreads. A teal cover band, then numbered chapters on Paper with a narrow text column beside a wide figure column; thin Cloud rules. */
+:root{
+  --teal:#7FC8C3; --deep-teal:#4FA8A2; --mint:#B5E2DE; --mist:#E4F4F2;
+  --paper:#FAFAF8; --cloud:#E6E8E8; --slate:#3B4049; --ink:#23262B;
+  --bg:var(--paper); --fg:var(--ink); --fg2:#4A505A; --muted:#6B727C; --rule:var(--cloud);
+  --panel:var(--mist); --label:#2C7A74; --cover:var(--teal); --cover-fg:var(--ink); --statement:#9FD5D0;
+  --c-phys:#2F5DBF; --c-hyb:#00A394; --c-ml:#6E48A6; --c-truth:#8A9099; --c-limit:#B0473C;
+  --seq1:#B5E2DE; --seq2:#7FC8C3; --seq3:#3E9D96; --seq4:#1F6B66;
+  --grid:#E6E8E8; --focus:#1F6B66;
+  --f-display:"Playfair Display",Georgia,"Times New Roman",serif;
+  --f-statement:"Oswald","Arial Narrow",Impact,sans-serif;
+  --f-body:"Montserrat",Arial,Helvetica,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1D2024; --fg:#F1F2EF; --fg2:#C7CCCF; --muted:#9AA1A8; --rule:#353A42; --panel:#262A30; --label:#8FD3CD;
+  --cover:#2C3138; --cover-fg:#F1F2EF; --statement:#3A4A4C;
+  --c-phys:#6389E8; --c-hyb:#12A898; --c-ml:#A07ADC; --c-truth:#8E959D; --c-limit:#E07A6F;
+  --seq1:#2E5C59; --seq2:#3E8A84; --seq3:#5FB7AF; --seq4:#A6DED9; --grid:#30353C; --focus:#8FD3CD; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1D2024; --fg:#F1F2EF; --fg2:#C7CCCF; --muted:#9AA1A8; --rule:#353A42; --panel:#262A30; --label:#8FD3CD;
+  --cover:#2C3138; --cover-fg:#F1F2EF; --statement:#3A4A4C;
+  --c-phys:#6389E8; --c-hyb:#12A898; --c-ml:#A07ADC; --c-truth:#8E959D; --c-limit:#E07A6F;
+  --seq1:#2E5C59; --seq2:#3E8A84; --seq3:#5FB7AF; --seq4:#A6DED9; --grid:#30353C; --focus:#8FD3CD; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-weight:300;font-size:16px;line-height:1.65;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--label);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0}
+p{margin:0}
+.label{font-family:var(--f-body);font-weight:500;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--label)}
+strong{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+
+/* cover */
+.cover{background:var(--cover);color:var(--cover-fg);overflow:hidden;position:relative}
+.cover .wrap{padding-block:56px 48px;position:relative;z-index:1}
+.statement{position:absolute;right:-2vw;bottom:-0.18em;font-family:var(--f-statement);font-weight:700;font-size:clamp(7rem,24vw,19rem);line-height:.8;color:var(--statement);letter-spacing:-.01em;pointer-events:none;user-select:none;z-index:0}
+.kicker{font-family:var(--f-display);font-size:clamp(1rem,2.2vw,1.35rem);letter-spacing:.32em;text-transform:uppercase}
+.cover h1{font-size:clamp(2.4rem,7vw,5rem);letter-spacing:.08em;text-transform:uppercase;line-height:1.02;margin-top:6px}
+.thesis{max-width:40rem;font-size:clamp(1.05rem,2vw,1.25rem);font-weight:400;margin-top:22px;line-height:1.55}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:40px;border:1px solid currentColor;max-width:880px}
+.fact{padding:18px 20px;border-left:1px solid currentColor;min-width:0}
+.fact:first-child{border-left:0}
+.fact b{display:block;font-family:var(--f-display);font-weight:700;font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1.1}
+.fact span{display:block;font-size:.86rem;font-weight:400;margin-top:6px}
+.byline{margin-top:28px;font-size:.85rem;font-weight:400}
+
+/* chapters */
+.chapter{border-top:1px solid var(--rule)}
+.chapter .wrap{padding-block:56px;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:40px 48px;align-items:start}
+.chapter .text{display:flex;flex-direction:column;gap:14px;min-width:0}
+.chapter h2{font-size:clamp(1.5rem,3vw,2.1rem);letter-spacing:.06em;text-transform:uppercase;line-height:1.15}
+.chapter .text p{color:var(--fg2);max-width:34rem}
+.figure{min-width:0;display:flex;flex-direction:column;gap:10px}
+.fig-title{font-weight:500;font-size:.95rem;color:var(--fg)}
+.fig-note{font-size:.8rem;color:var(--muted)}
+.full{grid-column:1/-1}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.8rem;color:var(--fg2)}
+.legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:6px}
+.legend i.dash{border-top-style:dashed}
+.legend i.dot{width:9px;height:9px;border:0;border-radius:50%;margin-right:6px}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.seg button{font:inherit;font-size:.8rem;font-weight:500;background:transparent;color:var(--fg2);border:0;padding:7px 12px;cursor:pointer;border-left:1px solid var(--rule)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--slate);color:var(--paper)}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{background:var(--label);color:#1D2024}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--label);color:#1D2024}}
+.ctl-label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--muted)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:28px 40px;background:var(--panel);padding:24px;border-radius:3px}
+.sliders{display:flex;flex-direction:column;gap:18px;min-width:0}
+.slider label{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;font-weight:500}
+.slider output{font-variant-numeric:tabular-nums;color:var(--label);font-weight:600}
+.slider input[type=range]{width:100%;accent-color:var(--c-hyb)}
+.slider small{display:block;font-size:.74rem;color:var(--muted);line-height:1.4;margin-top:2px}
+.switch{display:flex;align-items:center;gap:10px;font-size:.85rem;font-weight:500}
+.switch input{width:18px;height:18px;accent-color:var(--c-hyb)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.kpi{padding:14px 14px 14px 0;min-width:0}
+.kpi+.kpi{padding-left:14px;border-left:1px solid var(--rule)}
+.kpi b{display:block;font-family:var(--f-display);font-size:clamp(1.4rem,3vw,1.9rem);font-weight:700;line-height:1.15}
+.kpi span{display:block;font-size:.78rem;color:var(--fg2);margin-top:4px}
+.calc-out{display:flex;flex-direction:column;gap:16px;min-width:0}
+
+/* tooltip */
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.78rem;line-height:1.45;padding:8px 10px;border-radius:3px;max-width:260px;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+:root[data-theme="dark"] .tip{background:#F1F2EF;color:#1D2024}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tip{background:#F1F2EF;color:#1D2024}}
+.tip .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.tip i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+/* flow boxes */
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--rule)}
+.flow div{padding:16px;border-left:1px solid var(--rule);min-width:0}
+.flow div:first-child{border-left:0}
+.flow b{display:block;font-family:var(--f-display);font-weight:600;font-size:1.05rem;margin-bottom:4px}
+.flow span{font-size:.82rem;color:var(--fg2);display:block}
+
+.limits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px;font-size:.92rem;color:var(--fg2);padding:0;margin:0;list-style:none}
+.limits li{padding-left:14px;border-left:2px solid var(--rule)}
+footer{border-top:1px solid var(--rule);font-size:.82rem;color:var(--muted)}
+footer .wrap{padding-block:32px 48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 48px}
+footer ol{padding-left:18px;margin:6px 0 0}
+footer li{margin-bottom:4px}
+
+@media (max-width:820px){
+  .chapter .wrap,.calc,footer .wrap{grid-template-columns:minmax(0,1fr)}
+  .facts,.flow{grid-template-columns:minmax(0,1fr)}
+  .fact,.flow div{border-left:0;border-top:1px solid currentColor}
+  .flow div{border-top-color:var(--rule)}
+  .fact:first-child,.flow div:first-child{border-top:0}
+  .limits{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:minmax(0,1fr)}
+  .kpi+.kpi{padding-left:0;border-left:0;border-top:1px solid var(--rule)}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="cover">
+  <div class="statement" aria-hidden="true">COKE</div>
+  <div class="wrap">
+    <p class="kicker">Ethane furnace</p>
+    <h1>Coking &amp; run length</h1>
+    <p class="thesis">How long can a cracking furnace run before it must be decoked? I tested physics, machine learning and a hybrid of both on sparse plant-like data where the right answer is known. With little data, physics wins: even about five years of one furnace were not enough for ML alone to clearly catch up. A hybrid helped a little in what-if use, less than it first looked. And most of the money sits in the safety margin, whichever model you use.</p>
+    <div class="facts">
+      <div class="fact"><b class="num" id="f1">7 vs 20 days</b><span>error with 2 training campaigns: tuned physics vs ML only</span></div>
+      <div class="fact"><b class="num">0.3–0.6 day</b><span>hybrid gain over physics on fresh data in what-if use, not yet proven</span></div>
+      <div class="fact"><b class="num">€130–420k</b><span>per furnace-year lost to early, safety-driven decokes without a spare furnace (€25–77k with one), with any model</span></div>
+    </div>
+    <p class="byline">Madhushree Bharadwaj · process simulation and OTS engineer · engineering prototype on synthetic data</p>
+  </div>
+</header>
+
+<main>
+<section class="chapter" id="problem">
+  <div class="wrap">
+    <div class="text">
+      <p class="label">1 · The problem</p>
+      <h2>Coke grows where the gas is hottest</h2>
+      <p>Ethane and steam crack to ethylene inside long tubes at about 850 °C. A thin layer of coke builds on the tube wall. It insulates the tube, so the metal runs hotter every day until it reaches its limit and the furnace goes offline for one to three days of decoking.</p>
+      <p>The physics core is the coil model from my <a href="https://shreechem.github.io/Cracking-Furnace-Trainer/" target="_blank" rel="noopener">Cracking Furnace Trainer</a>, with Sundaram &amp; Froment (1977) kinetics, plus the coking rate form and activation energy of Sundaram, Van Damme &amp; Froment (1981). The coking constant is calibrated to a 60-day design run.</p>
+    </div>
+    <div class="figure">
+      <p class="fig-title">Coke thickness along one coil at the design point</p>
+      <div class="legend" id="lg-coke"></div>
+      <div class="chart" id="ch-coke" role="img" aria-label="Coke thickness along the coil after 15, 30, 45 and 60 days; almost no coke in the first 40 percent, rising to about 5 mm at the outlet after 60 days."></div>
+      <p class="fig-note">Almost no coke in the first part of the coil, as the 1981 paper reports. Values from <code>coke.py</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="test">
+  <div class="wrap">
+    <div class="text">
+      <p class="label">2 · The test</p>
+      <h2>A hidden truth to grade against</h2>
+      <p>Real plant data never tells you the right answer. So a separate "true" furnace runs 70 campaigns and records only what a plant records: daily DCS values, a weekly propane sample and one noisy pyrometer reading per week.</p>
+      <p>The truth contains effects the physics model does not know: fast initial coking, feed propane and different coke properties change the run length; tube narrowing and a biased pyrometer change only what is measured. A test in the code stops the models from ever reading the truth.</p>
+      <p>To be clear about the limits: the physics model shares the truth's chemistry and heat transfer, so this tests a structurally good physics model. Real plants differ more (flux profile, burners, spalling, TLE fouling, pressure-drop limits), which would give data-driven corrections more to do.</p>
+    </div>
+    <div class="figure">
+      <p class="fig-title">One campaign: what the plant knows vs what is true</p>
+      <div class="legend" id="lg-camp"></div>
+      <div class="chart" id="ch-camp" role="img" aria-label="Hottest tube metal temperature over a 66-day campaign: the true daily line rises from about 1020 to 1100 degrees C; weekly pyrometer readings scatter around it."></div>
+      <div class="flow">
+        <div><b>30 campaigns</b><span>history the models learn from</span></div>
+        <div><b>20 campaigns</b><span>test set to compare models; some method fixes were made after seeing it</span></div>
+        <div><b>20 campaigns</b><span>confirmation set, made after the results and used once</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="result">
+  <div class="wrap">
+    <div class="text">
+      <p class="label">3 · The result</p>
+      <h2>Physics first, ML second, hybrid where data allows</h2>
+      <p><strong>What-if</strong> asks on day 21: "if I hold these conditions, how many days are left?" <strong>Forecast</strong> asks the same without knowing what operators will do next. <strong>Start</strong> asks at the beginning of the campaign.</p>
+      <p>With 2 to 8 campaigns, ML alone is 1.3 to 3 times worse than a physics model with one tuned factor. Even with 30 campaigns, roughly five years of one furnace, it had not clearly caught up: on the fresh confirmation set it was still about 2.4 days worse in what-if use.</p>
+      <p>The <strong>cautious</strong> rule only accepts a learned correction when it is clearly better on the training data, so the hybrid stays close to physics. The <strong>aggressive</strong> rule accepts it more readily: it gains with enough data but can be worse with very little.</p>
+    </div>
+    <div class="figure">
+      <div class="controls">
+        <span class="ctl-label">Question</span>
+        <div class="seg" id="seg-q"><button type="button" data-v="c" aria-pressed="true">What-if</button><button type="button" data-v="b" aria-pressed="false">Forecast</button><button type="button" data-v="a" aria-pressed="false">Start</button></div>
+        <span class="ctl-label">Hybrid rule</span>
+        <div class="seg" id="seg-r"><button type="button" data-v="min" aria-pressed="true">Aggressive</button><button type="button" data-v="1se" aria-pressed="false">Cautious</button></div>
+      </div>
+      <p class="fig-title" id="lc-title">Mean absolute error on 20 test campaigns</p>
+      <div class="legend" id="lg-lc"></div>
+      <div class="chart" id="ch-lc" role="img" aria-label="Learning curves: prediction error versus number of training campaigns for physics, ML-only and hybrid models."></div>
+      <p class="fig-note">Each training size up to 16 is drawn 20 times at random; bands show ± 1 standard error. At 30 there is only one possible training set, so no band. Penalties are chosen by leave-one-out on training data only. The rule toggle switches the hybrids and ML ridge; boosting has no penalty to choose.</p>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="proof">
+  <div class="wrap">
+    <div class="text">
+      <p class="label">4 · Is the gain real?</p>
+      <h2>Checked on fresh data, and it shrank</h2>
+      <p>On the test set the hybrid looked 25 to 36 % better than physics. That set had also guided some of my method choices, so I generated 20 new campaigns and used them once. On that fresh set alone the what-if gain is 0.3 to 0.6 days (7 to 14 %) and not proven. Pooled over both sets it looks like about a day, but that number leans on the test set. In the forecast, no model is significantly better than physics.</p>
+      <p>The parameter hybrid also learned a physical fact: <strong id="prop-text">feed propane raises coking</strong>. A black-box model cannot tell you that. It gave the pyrometer readings almost no weight, which points to better measurement as the next lever.</p>
+    </div>
+    <div class="figure">
+      <div class="controls">
+        <span class="ctl-label">Question</span>
+        <div class="seg" id="seg-ciq"><button type="button" data-v="c" aria-pressed="true">What-if</button><button type="button" data-v="b" aria-pressed="false">Forecast</button></div>
+        <span class="ctl-label">Campaigns</span>
+        <div class="seg" id="seg-cis"><button type="button" data-v="confirm" aria-pressed="true">Fresh 20 (clean)</button><button type="button" data-v="pooled" aria-pressed="false">Pooled 40</button></div>
+      </div>
+      <p class="fig-title" id="ci-title">Days gained over tuned physics, with 95 % interval</p>
+      <div class="chart" id="ch-ci" role="img" aria-label="Gain over physics with 95 percent bootstrap intervals for hybrid and ML models under two selection rules."></div>
+      <p class="fig-note">If an interval crosses zero, the gain is not proven. Paired bootstrap over the held-back campaigns, 5,000 resamples; it does not include variation from the single 30-campaign training set. Six comparisons per question, so one interval clearing zero by a little is weak evidence.</p>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="value">
+  <div class="wrap">
+    <div class="text full" style="max-width:52rem">
+      <p class="label">5 · The value</p>
+      <h2>The money is in the safety margin</h2>
+      <p>Planners decoke a few days before the predicted end because the prediction can be wrong. The margin is sized on one held-back set so that about 1 campaign in 20 would reach the tube limit first, then judged on the other set. A model with smaller errors needs a smaller margin, so campaigns run longer and decokes come less often. Change the assumptions and watch the euros move.</p>
+    </div>
+    <div class="calc full">
+      <div class="sliders">
+        <div class="slider"><label for="s-margin">Cash margin <output id="o-margin" class="num"></output></label><input id="s-margin" type="range" min="8" max="35" step="1" value="15"><small>Ethane-cracker margin, ¢/lb ethylene. RBN Energy: long-term ≈ 15, June 2026 ≈ 19, April 2026 peak ≈ 30.</small></div>
+        <div class="slider"><label for="s-days">Days per decoke <output id="o-days" class="num"></output></label><input id="s-days" type="range" min="1" max="3" step="0.5" value="2"><small>Typically 1 to 3 days (Imubit, Prismecs).</small></div>
+        <div class="slider"><label for="s-cost">Direct cost per decoke <output id="o-cost" class="num"></output></label><input id="s-cost" type="range" min="20" max="1000" step="10" value="50"><small>Assumption: no public figure found. Steam, air, fuel, crew and coil life used.</small></div>
+        <label class="switch" for="s-spare"><input id="s-spare" type="checkbox"> A spare furnace covers decokes</label>
+        <div><span class="ctl-label">95 % margin from 20 campaigns</span><div class="seg" id="seg-m" style="margin-top:6px"><button type="button" data-v="normal" aria-pressed="true">Normal</button><button type="button" data-v="empirical" aria-pressed="false">Empirical</button></div><small style="display:block;font-size:.74rem;color:var(--muted);margin-top:6px">Normal: mean + 1.645 × standard deviation. Empirical: the 95 % point of the 20 errors, close to the second-worst case.</small></div>
+      </div>
+      <div class="calc-out">
+        <div class="kpis">
+          <div class="kpi"><b class="num" id="k-safety">–</b><span>lost per furnace-year to early decokes, physics model</span></div>
+          <div class="kpi"><b class="num" id="k-hyb">–</b><span>saved per furnace-year by the parameter hybrid vs physics</span></div>
+          <div class="kpi"><b class="num" id="k-ml">–</b><span>extra lost with ML only (boosting) vs physics</span></div>
+        </div>
+        <p class="fig-title">Lost to early decokes, per furnace-year (lower is better)</p>
+        <div class="chart" id="ch-eur" role="img" aria-label="Euros lost per furnace-year to safety-driven early decokes for each model."></div>
+        <p class="fig-note" id="eur-note"></p>
+        <p class="fig-note">Compared with perfect foresight. A campaign that hits the tube limit before the planned decoke is given no extra cost here; in a plant it means an unplanned decoke. ML ridge uses the cautious rule; the hybrids use the aggressive rule.</p>
+      </div>
+    </div>
+    <div class="text">
+      <h3 style="font-size:1.25rem;letter-spacing:.05em;text-transform:uppercase">Which COT earns most?</h3>
+      <p>A hotter coil outlet makes more ethylene per hour but cokes much faster. The physics model turns each COT into a run length, so the yearly result can be compared. The same sliders apply.</p>
+      <p>The curve is flat near its top and steep on the cold side. Where the top sits depends on costs this model does not contain, such as coil life lost to thermal cycling, fuel and compressor limits. Read the optimum as a what-if, not a recommendation.</p>
+    </div>
+    <div class="figure">
+      <p class="fig-title" id="cot-title">Yearly result vs COT 850 °C, one furnace</p>
+      <div class="chart" id="ch-cot" role="img" aria-label="Yearly profit difference versus coil outlet temperature relative to 850 degrees C."></div>
+      <p class="fig-note">Unconverted ethane is taken as recycled, so the margin per tonne of ethylene is held constant. Fuel cost of a hotter COT is not modelled.</p>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="limits">
+  <div class="wrap">
+    <div class="text full">
+      <p class="label">6 · Limits and next steps</p>
+      <h2>What this does not show</h2>
+    </div>
+    <ul class="limits full">
+      <li>One synthetic plant. All values are illustrative. No plant, client or employer data is used.</li>
+      <li>The best hybrid set-up was identified after seeing results; a third data set would be needed to confirm it without bias.</li>
+      <li>The ethylene margin is a US Gulf ethane basis; European crackers differ. The cost of one decoke is an assumption.</li>
+      <li>The 5-reaction scheme over-predicts butadiene (≈ 6 wt %); only its trend feeds the coke model. Coke uses gas temperature and the asymptotic rate.</li>
+      <li>The test furnace shares the physics model's chemistry and uniform heat flux, and decokes exactly at the true 1,100 °C. Real decisions use noisy readings, and TLE fouling or pressure drop can also end a run.</li>
+      <li>The hybrid's € saving ranges from −€12k to +€123k per furnace-year, depending on the hybrid type and how the safety margin is sized.</li>
+      <li>Next test: would daily tube temperatures beat better modelling? Safety margins cost more than the differences between models.</li>
+      <li>Next build: an interlock consistency checker, then both join the furnace trainer under ProcessGuard.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <p><strong>Madhushree Bharadwaj</strong>, process simulation and OTS engineer. Python notebook, model code and tests: <a href="https://github.com/ShreeChem/furnace-coking-hybrid" target="_blank" rel="noopener">github.com/ShreeChem/furnace-coking-hybrid</a>.</p>
+      <p style="margin-top:8px">Engineering prototype on synthetic data. Not a certified tool and not based on any specific plant.</p>
+    </div>
+    <div>
+      <p class="label" style="color:var(--muted)">Sources</p>
+      <ol>
+        <li>Sundaram &amp; Froment (1977), <em>Chem. Eng. Sci.</em> 32, 601–608.</li>
+        <li>Sundaram, Van Damme &amp; Froment (1981), <a href="https://aiche.onlinelibrary.wiley.com/doi/abs/10.1002/aic.690270610" target="_blank" rel="noopener"><em>AIChE J.</em> 27, 946–951</a>.</li>
+        <li><a href="https://rbnenergy.com/daily-posts/analyst-insight/ethane-petchem-cracker-margin-back-earth-after-iran-war-spike" target="_blank" rel="noopener">RBN Energy, ethane cracker margin (June 2026)</a>.</li>
+        <li><a href="https://www.opis.com/resources/energy-market-news-from-opis/europe-april-ethylene-contract-settles-up-39-at-e1595-mt-on-conflict-disruption/" target="_blank" rel="noopener">OPIS, Europe ethylene contract April 2026</a> (exchange rate).</li>
+        <li><a href="https://imubit.com/articles/decoking" target="_blank" rel="noopener">Imubit, decoking and run length</a>; <a href="https://prismecs.com/blog/petrochemical-plant-operations-explained" target="_blank" rel="noopener">Prismecs</a>.</li>
+        <li>Hastie, Tibshirani &amp; Friedman, <em>Elements of Statistical Learning</em>, §7.10 (one-standard-error rule).</li>
+      </ol>
+    </div>
+  </div>
+</footer>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const chartW = host => Math.max(300, Math.min(760, Math.round(host.clientWidth || 640)));
+const narrow = host => chartW(host) < 500;
+const SHORT = {physics:'Physics', hybrid_param:'Hybrid (param.)', hybrid_residual:'Hybrid (resid.)', ml_gbm:'ML boosting', ml_ridge:'ML ridge'};
+const fmtK = v => (Math.abs(v) >= 1e6 ? (v/1e6).toFixed(2).replace(/\.?0+$/,'') + 'M' : Math.round(v/1e3) + 'k');
+const eur = v => (v < 0 ? '−€' : '€') + fmtK(Math.abs(v));
+const MODEL = {
+  physics:        {name:'Physics, 1 tuned factor',      color:'--c-phys', dash:''},
+  hybrid_param:   {name:'Hybrid (parameter)',            color:'--c-hyb',  dash:''},
+  hybrid_residual:{name:'Hybrid (residual)',             color:'--c-hyb',  dash:'6 4'},
+  ml_gbm:         {name:'ML only (gradient boosting)',   color:'--c-ml',   dash:''},
+  ml_ridge:       {name:'ML only (ridge)',               color:'--c-ml',   dash:'6 4'},
+};
+
+/* ---------- tooltip ---------- */
+const tip = $('tip');
+function showTip(html, x, y){ tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let left = x + 14, top = y - h - 10; if (left + w > innerWidth - 8) left = x - w - 14; if (top < 8) top = y + 16;
+  tip.style.left = left + 'px'; tip.style.top = top + 'px'; }
+const hideTip = () => { tip.hidden = true; };
+
+/* ---------- generic line chart ---------- */
+function lineChart(host, o){
+  host.innerHTML = '';
+  const W = chartW(host), H = Math.round((o.height || 320) * (W < 500 ? 0.85 : 1)), m = {l:52, r:o.right || 16, t:14, b:42};
+  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'}, host);
+  const xs = v => o.xlog ? Math.log2(v) : v;
+  const x0 = xs(o.xmin), x1 = xs(o.xmax);
+  const X = v => m.l + (xs(v) - x0) / (x1 - x0) * (W - m.l - m.r);
+  const Y = v => H - m.b - (v - o.ymin) / (o.ymax - o.ymin) * (H - m.t - m.b);
+  const grid = css('--grid'), muted = css('--muted');
+  o.yticks.forEach(t => { el('line', {x1:m.l, x2:W-m.r, y1:Y(t), y2:Y(t), stroke:grid, 'stroke-width':1}, svg);
+    const tx = el('text', {x:m.l-8, y:Y(t)+4, 'text-anchor':'end', 'font-size':11, fill:muted}, svg); tx.textContent = o.yfmt ? o.yfmt(t) : t; });
+  o.xticks.forEach(t => { const tx = el('text', {x:X(t), y:H-m.b+18, 'text-anchor':'middle', 'font-size':11, fill:muted}, svg); tx.textContent = o.xfmt ? o.xfmt(t) : t; });
+  el('line', {x1:m.l, x2:W-m.r, y1:H-m.b, y2:H-m.b, stroke:muted, 'stroke-width':1}, svg);
+  const xl = el('text', {x:(m.l+W-m.r)/2, y:H-6, 'text-anchor':'middle', 'font-size':11.5, fill:muted}, svg); xl.textContent = o.xlabel;
+  const yl = el('text', {x:12, y:(m.t+H-m.b)/2, 'text-anchor':'middle', 'font-size':11.5, fill:muted, transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`}, svg); yl.textContent = o.ylabel;
+  (o.hlines || []).forEach(h => { el('line', {x1:m.l, x2:W-m.r, y1:Y(h.y), y2:Y(h.y), stroke:css(h.color), 'stroke-width':1.5, 'stroke-dasharray':'5 4'}, svg);
+    const t = el('text', {x:W-m.r, y:Y(h.y)-6, 'text-anchor':'end', 'font-size':11, fill:css(h.color)}, svg); t.textContent = h.label; });
+  o.series.forEach(s => {
+    const col = css(s.color);
+    if (s.band) { const up = s.points.map(p => `${X(p.x)},${Y(p.y + p.se)}`), dn = s.points.slice().reverse().map(p => `${X(p.x)},${Y(p.y - p.se)}`);
+      el('polygon', {points:up.concat(dn).join(' '), fill:col, 'fill-opacity':0.13, stroke:'none'}, svg); }
+    if (!s.dotsOnly) el('polyline', {points:s.points.map(p => `${X(p.x)},${Y(p.y)}`).join(' '), fill:'none', stroke:col, 'stroke-width':s.width || 2.2, 'stroke-dasharray':s.dash || '', 'stroke-linejoin':'round', 'stroke-linecap':'round'}, svg);
+    if (s.dots) s.points.forEach(p => el('circle', {cx:X(p.x), cy:Y(p.y), r:s.r || 4, fill:col, stroke:css('--bg'), 'stroke-width':2}, svg));
+    if (s.endLabel) { const p = s.points[s.points.length-1]; const t = el('text', {x:X(p.x)+8, y:Y(p.y)+4 + (s.labelDy||0), 'font-size':11.5, 'font-weight':500, fill:css('--fg2')}, svg); t.textContent = s.endLabel; }
+  });
+  (o.marks || []).forEach(mk => { el('circle', {cx:X(mk.x), cy:Y(mk.y), r:6, fill:'none', stroke:css(mk.color), 'stroke-width':2}, svg);
+    const t = el('text', {x:X(mk.x), y:Y(mk.y)-12, 'text-anchor':'middle', 'font-size':11.5, 'font-weight':500, fill:css('--fg')}, svg); t.textContent = mk.label; });
+  // hover: crosshair snapped to the nearest x
+  const xsAll = [...new Set(o.series.flatMap(s => s.points.map(p => p.x)))].sort((a,b) => a-b);
+  const cross = el('line', {y1:m.t, y2:H-m.b, stroke:muted, 'stroke-width':1, 'stroke-dasharray':'3 3', visibility:'hidden'}, svg);
+  const hit = el('rect', {x:m.l, y:m.t, width:W-m.l-m.r, height:H-m.t-m.b, fill:'transparent'}, svg);
+  const move = ev => { const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    let best = xsAll[0], bd = Infinity; xsAll.forEach(v => { const d = Math.abs(X(v) - loc.x); if (d < bd) { bd = d; best = v; } });
+    cross.setAttribute('x1', X(best)); cross.setAttribute('x2', X(best)); cross.setAttribute('visibility', 'visible');
+    showTip(o.tip(best), ev.clientX, ev.clientY); };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
+}
+function legend(host, items){ host.innerHTML = items.map(i => `<span><i class="${i.cls||''}" style="border-color:var(${i.color});${i.cls==='dot'?`background:var(${i.color})`:''}"></i>${i.name}</span>`).join(''); }
+
+/* ---------- 1 · coke profile ---------- */
+function drawCoke(){
+  const z = DATA.coke_profile.z, days = DATA.coke_profile.days, cols = {15:'--seq1', 30:'--seq2', 45:'--seq3', 60:'--seq4'};
+  legend($('lg-coke'), Object.keys(days).map(d => ({name:`day ${d}`, color:cols[d]})));
+  lineChart($('ch-coke'), {xmin:0, xmax:1, ymin:0, ymax:6, xticks:[0,.2,.4,.6,.8,1], yticks:[0,2,4,6], xfmt:v => v===0?'inlet':v===1?'outlet':v.toFixed(1),
+    xlabel:'Position along the coil', ylabel:'Coke (mm)', height:280,
+    series:Object.keys(days).map(d => ({color:cols[d], points:z.map((v,i) => ({x:v, y:days[d][i]}))})),
+    tip:x => { const i = z.indexOf(x); return `<b>${(x*100).toFixed(0)} % along the coil</b>` + Object.keys(days).map(d => `<div class="row"><span><i style="background:var(${cols[d]})"></i>day ${d}</span><span>${days[d][i].toFixed(2)} mm</span></div>`).join(''); }});
+}
+
+/* ---------- 2 · campaign ---------- */
+function drawCampaign(){
+  const c = DATA.campaign;
+  legend($('lg-camp'), [{name:'true hottest tube temperature (hidden from models)', color:'--c-truth'}, {name:'weekly pyrometer reading (what the plant knows)', color:'--c-hyb', cls:'dot'}, {name:'tube limit 1,100 °C', color:'--c-limit', cls:'dash'}]);
+  const pyro = Object.fromEntries(c.pyro.map(p => [p[0], p[1]]));
+  lineChart($('ch-camp'), {xmin:0, xmax:66, ymin:1010, ymax:1110, xticks:[0,10,20,30,40,50,60], yticks:[1020,1040,1060,1080,1100], xlabel:'Days on stream', ylabel:'Tube metal (°C)', height:280,
+    hlines:[{y:c.limit, color:'--c-limit', label:'limit'}],
+    series:[{color:'--c-truth', points:c.true.map(p => ({x:p[0], y:p[1]})), width:2},
+            {color:'--c-hyb', points:c.pyro.map(p => ({x:p[0], y:p[1]})), dots:true, dotsOnly:true, r:5}],
+    tip:x => { const t = c.true.find(p => p[0]===x); return `<b>Day ${x}</b><div class="row"><span>true</span><span>${t ? t[1].toFixed(0) : '–'} °C</span></div>` + (pyro[x] !== undefined ? `<div class="row"><span>pyrometer</span><span>${pyro[x].toFixed(0)} °C</span></div>` : ''); }});
+}
+
+/* ---------- 3 · learning curves ---------- */
+const state = {q:'c', rule:'min', ciq:'c', cis:'confirm', method:'normal'};
+function drawLC(){
+  const L = DATA.learning_curves, base = L[`${state.q}_1se`], agg = L[`${state.q}_${state.rule}`];
+  const lines = [['physics', base.physics, MODEL.physics], ['ml_gbm', base.ml_gbm, MODEL.ml_gbm], ['ml_ridge', agg.ml_ridge, {...MODEL.ml_ridge, name:`ML only (ridge), ${state.rule==='min'?'aggressive':'cautious'}`}],
+                 ['hybrid_residual', agg.hybrid_residual, {...MODEL.hybrid_residual, name:`Hybrid (residual), ${state.rule==='min'?'aggressive':'cautious'}`}],
+                 ['hybrid_param', agg.hybrid_param, {...MODEL.hybrid_param, name:`Hybrid (parameter), ${state.rule==='min'?'aggressive':'cautious'}`}]];
+  legend($('lg-lc'), lines.map(l => ({name:l[2].name, color:l[2].color, cls:l[2].dash?'dash':''})));
+  const all = lines.flatMap(l => l[1].map(p => p.mae + p.se)); const ymax = Math.ceil(Math.max(...all) / 5) * 5;
+  const qn = {c:'what-if', b:'forecast', a:'start of campaign'}[state.q];
+  $('lc-title').textContent = `Mean absolute error on 20 test campaigns (${qn}), days`;
+  lineChart($('ch-lc'), {xlog:true, xmin:2, xmax:30, ymin:0, ymax, xticks:[2,4,8,16,30], yticks:Array.from({length:ymax/5+1}, (_,i) => i*5), xlabel:'Training campaigns (≈ 2 months each)', ylabel:'Error (days)',
+    series:lines.map(l => ({color:l[2].color, dash:l[2].dash, band:true, dots:true, r:3.5, points:l[1].map(p => ({x:p.n, y:p.mae, se:p.se}))})),
+    tip:n => `<b>${n} training campaigns</b>` + lines.map(l => { const p = l[1].find(q => q.n===n); return `<div class="row"><span><i style="background:var(${l[2].color})"></i>${l[2].name}</span><span>${p.mae.toFixed(1)} d</span></div>`; }).join('') });
+  const p2 = base.physics.find(p => p.n===2).mae, m2 = Math.min(base.ml_gbm.find(p => p.n===2).mae, base.ml_ridge.find(p => p.n===2).mae);
+  if (state.q === 'c') $('f1').textContent = `${Math.round(p2)} vs ${Math.round(m2)} days`;
+}
+
+/* ---------- 4 · confidence intervals ---------- */
+function drawCI(){
+  const host = $('ch-ci'); host.innerHTML = '';
+  const rows = DATA.ci.filter(r => r.q === state.ciq && r.set === state.cis);
+  $('ci-title').textContent = `Days gained over tuned physics, with 95 % interval (${state.cis === 'confirm' ? 'fresh 20 campaigns, used once' : 'test + fresh, 40 campaigns'})`;
+  const W = chartW(host), nar = W < 500, rowH = 40, m = {l:nar ? 138 : 250, r:16, t:10, b:40}, H = m.t + m.b + rows.length * rowH;
+  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`}, host);
+  const xmin = -3.5, xmax = 3; const X = v => m.l + (v - xmin) / (xmax - xmin) * (W - m.l - m.r);
+  const muted = css('--muted');
+  [-3,-2,-1,0,1,2,3].forEach(t => { el('line', {x1:X(t), x2:X(t), y1:m.t, y2:H-m.b, stroke:t===0?muted:css('--grid'), 'stroke-width':1, 'stroke-dasharray':t===0?'4 3':''}, svg);
+    const tx = el('text', {x:X(t), y:H-m.b+16, 'text-anchor':'middle', 'font-size':11, fill:muted}, svg); tx.textContent = (t>0?'+':'') + t; });
+  const xl = el('text', {x:(m.l+W-m.r)/2, y:H-6, 'text-anchor':'middle', 'font-size':11.5, fill:muted}, svg); xl.textContent = nar ? '← worse · days gained · better →' : '← worse than physics · days gained · better than physics →';
+  rows.forEach((r, i) => {
+    const y = m.t + i * rowH + rowH / 2, md = MODEL[r.model], col = css(md.color);
+    const lab = el('text', {x:m.l-12, y:y+4, 'text-anchor':'end', 'font-size':12, fill:css('--fg2')}, svg);
+    lab.textContent = nar ? `${SHORT[r.model]} · ${r.rule==='min'?'aggr.':'caut.'}` : `${md.name.replace(' (gradient boosting)', '')} · ${r.rule==='min'?'aggressive':'cautious'}`;
+    el('line', {x1:X(r.lo), x2:X(r.hi), y1:y, y2:y, stroke:col, 'stroke-width':4, 'stroke-linecap':'round'}, svg);
+    el('circle', {cx:X(r.gain), cy:y, r:5.5, fill:col, stroke:css('--bg'), 'stroke-width':2}, svg);
+    const hit = el('rect', {x:0, y:y-rowH/2, width:W, height:rowH, fill:'transparent'}, svg);
+    const show = ev => showTip(`<b>${md.name}, ${r.rule==='min'?'aggressive':'cautious'} rule</b><div class="row"><span>gain vs physics</span><span>${r.gain>0?'+':''}${r.gain.toFixed(2)} d</span></div><div class="row"><span>95 % interval</span><span>${r.lo.toFixed(2)} to ${r.hi.toFixed(2)}</span></div><div class="row"><span>error</span><span>${r.mae.toFixed(2)} d (physics ${r.physics.toFixed(2)})</span></div>${r.lo>0?'<div>Proven better than physics</div>':'<div>Not proven</div>'}`, ev.clientX, ev.clientY);
+    hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hideTip);
+  });
+}
+
+/* ---------- 5 · economics (same formulas as value.py) ---------- */
+function econ(){ const c = +$('s-margin').value; return {margin:c * DATA.econ.c_lb_to_usd_t / DATA.econ.usd_per_eur, cents:c, days:+$('s-days').value, cost:+$('s-cost').value * 1e3, spare:$('s-spare').checked, tpd:DATA.econ.tpd}; }
+function annualProfit(run, e, tpd){ tpd = tpd || e.tpd; const cycles = 365 / (run + e.days);
+  const prod = e.spare ? 365 * tpd * e.margin : 365 * run / (run + e.days) * tpd * e.margin; return prod - cycles * e.cost; }
+function quantile(a, q){ const s = a.slice().sort((x,y) => x-y), h = (s.length - 1) * q, lo = Math.floor(h), hi = Math.min(lo + 1, s.length - 1); return s[lo] + (h - lo) * (s[hi] - s[lo]); }
+function safetyMargin(err, method){ if (method === 'normal') { const n = err.length, mu = err.reduce((a,b) => a+b, 0) / n, sd = Math.sqrt(err.reduce((a,b) => a + (b-mu)**2, 0) / (n-1)); return Math.max(0, mu + 1.645 * sd); }
+  return Math.max(0, quantile(err, 0.95)); }
+function caseA(model, e, method){
+  const S = DATA.case_a[model]; let early = [], runs = [], late = 0;
+  [['test','confirm'], ['confirm','test']].forEach(([a, b]) => {
+    const m = safetyMargin(S[a].pred.map((p,i) => p - S[a].rem[i]), method);
+    S[b].pred.forEach((p, i) => { const planned = Math.max(p - m, 0), rem = S[b].rem[i]; early.push(Math.max(rem - planned, 0)); runs.push(S[b].run[i]); if (planned > rem) late++; });
+  });
+  const lost = runs.reduce((s, r, i) => s + annualProfit(r, e) - annualProfit(Math.max(r - early[i], 1), e), 0) / runs.length;
+  return {lost, late, n:runs.length, early:early.reduce((a,b) => a+b, 0) / early.length};
+}
+function drawValue(){
+  const e = econ();
+  $('o-margin').textContent = `${e.cents} ¢/lb · €${Math.round(e.margin)}/t`; $('o-days').textContent = `${e.days} d`; $('o-cost').textContent = `€${Math.round(e.cost/1e3)}k`;
+  const order = ['physics', 'hybrid_param', 'hybrid_residual', 'ml_gbm', 'ml_ridge'], res = Object.fromEntries(order.map(k => [k, caseA(k, e, state.method)]));
+  $('k-safety').textContent = eur(res.physics.lost); $('k-hyb').textContent = eur(res.physics.lost - res.hybrid_param.lost); $('k-ml').textContent = eur(res.ml_gbm.lost - res.physics.lost);
+  // bars
+  const host = $('ch-eur'); host.innerHTML = ''; const W = chartW(host), nar = W < 500, rowH = 34, m = {l:nar ? 118 : 220, r:64, t:4, b:8}, H = m.t + m.b + order.length * rowH;
+  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`}, host); const vmax = Math.max(...order.map(k => res[k].lost)) * 1.05 || 1; const X = v => m.l + v / vmax * (W - m.l - m.r);
+  order.forEach((k, i) => { const y = m.t + i * rowH, md = MODEL[k], r = res[k];
+    const lab = el('text', {x:m.l-12, y:y+rowH/2+4, 'text-anchor':'end', 'font-size':12, fill:css('--fg2')}, svg); lab.textContent = nar ? SHORT[k] : md.name;
+    const bar = el('rect', {x:m.l, y:y+7, width:Math.max(2, X(r.lost)-m.l), height:rowH-14, rx:3, fill:css(md.color)}, svg);
+    if (md.dash) bar.setAttribute('fill-opacity', 0.55);
+    const v = el('text', {x:X(r.lost)+8, y:y+rowH/2+4, 'font-size':12, 'font-weight':500, fill:css('--fg')}, svg); v.textContent = eur(r.lost);
+    const hit = el('rect', {x:0, y, width:W, height:rowH, fill:'transparent'}, svg);
+    const show = ev => showTip(`<b>${md.name}</b><div class="row"><span>lost per furnace-year</span><span>${eur(r.lost)}</span></div><div class="row"><span>days decoked early</span><span>${r.early.toFixed(1)} per campaign</span></div><div class="row"><span>hit the tube limit first</span><span>${r.late} of ${r.n}</span></div>`, ev.clientX, ev.clientY);
+    hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hideTip); });
+  $('eur-note').textContent = `${e.spare ? 'Spare furnace: decoke days lose no production; only the decoke cost counts.' : 'Furnace-limited plant: decoke days lose production.'} ${state.method === 'normal' ? 'Normal margin.' : 'Empirical margin.'} 40 held-back campaigns, what-if question, models trained on 30 campaigns.`;
+  drawCOT(e);
+}
+function drawCOT(e){
+  const rows = DATA.cot.map(r => ({...r, eur:annualProfit(r.run, e, r.tpd)})); const ref = rows.find(r => r.cot === 850).eur;
+  rows.forEach(r => r.rel = r.eur - ref); const best = rows.reduce((a, b) => b.rel > a.rel ? b : a);
+  const lo = Math.min(...rows.map(r => r.rel)), hi = Math.max(...rows.map(r => r.rel));
+  const step = (hi - lo) > 4e6 ? 2e6 : (hi - lo) > 1.5e6 ? 1e6 : 5e5; const ymin = Math.floor(lo / step) * step, ymax = Math.max(step, Math.ceil(hi / step) * step);
+  const ticks = []; for (let t = ymin; t <= ymax + 1; t += step) ticks.push(t);
+  $('cot-title').textContent = `Yearly result vs COT 850 °C, one furnace · best here: ${best.cot} °C, ${Math.round(best.run)}-day runs`;
+  lineChart($('ch-cot'), {xmin:836, xmax:866, ymin, ymax, xticks:[836,840,845,850,855,860,865], yticks:ticks, yfmt:v => (v>0?'+':'') + (v/1e6).toFixed(1) + 'M', xlabel:'Coil outlet temperature (°C)', ylabel:'€ per year vs 850 °C', height:280,
+    hlines:[], marks:[{x:best.cot, y:best.rel, color:'--c-hyb', label:`${best.cot} °C`}],
+    series:[{color:'--c-phys', points:rows.map(r => ({x:r.cot, y:r.rel}))}],
+    tip:x => { const r = rows.find(q => q.cot === x); return `<b>COT ${x} °C</b><div class="row"><span>run length</span><span>${r.run.toFixed(0)} d</span></div><div class="row"><span>ethylene</span><span>${r.tpd.toFixed(0)} t/day</span></div><div class="row"><span>vs 850 °C</span><span>${eur(r.rel)}/yr</span></div>`; }});
+}
+
+/* ---------- wiring ---------- */
+function seg(id, key, fn){ $(id).addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; state[key] = b.dataset.v;
+  $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); fn(); }); }
+function drawAll(){ drawCoke(); drawCampaign(); drawLC(); drawCI(); drawValue();
+  $('prop-text').textContent = `about +${DATA.propane.learned.toFixed(1)} % coking per mol % propane (hidden truth: +${DATA.propane.truth.toFixed(1)} %; a rough bootstrap gives ${DATA.propane.lo90.toFixed(0)}–${DATA.propane.hi90.toFixed(0)} %, so the closeness is partly luck)`; }
+seg('seg-q', 'q', drawLC); seg('seg-r', 'rule', drawLC); seg('seg-ciq', 'ciq', drawCI); seg('seg-cis', 'cis', drawCI); seg('seg-m', 'method', drawValue);
+['s-margin', 's-days', 's-cost', 's-spare'].forEach(id => $(id).addEventListener('input', drawValue));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+new MutationObserver(drawAll).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+addEventListener('scroll', hideTip, {passive:true});
+let rz = 0, lastW = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 8) return; lastW = innerWidth; clearTimeout(rz); rz = setTimeout(drawAll, 150); });
+drawAll();
+if (typeof window !== 'undefined') window.__caseA = caseA, window.__econ = econ;
+</script>

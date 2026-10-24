@@ -1,0 +1,24 @@
+{
+  "TRUTH": {
+    "E_c": 128000.0,
+    "k_coke": 5.6,
+    "dtf_design": 172.0,
+    "propane_gain": 8.0,
+    "init_mm": 0.9,
+    "init_tau_days": 3.0,
+    "run_design_days": 55.0,
+    "tmt_limit": 1100.0
+  },
+  "SENSORS": {
+    "feed_rel_sd": 0.005,
+    "ratio_sd": 0.004,
+    "cot_sd": 1.0,
+    "cip_sd": 0.02,
+    "propane_lab_sd": 0.003,
+    "lab_every_days": 7,
+    "pyro_every_days": 7,
+    "pyro_noise_sd": 8.0,
+    "pyro_bias_sd": 6.0
+  },
+  "A_true": 2249.35144313379
+}
